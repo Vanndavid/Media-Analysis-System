@@ -8,7 +8,7 @@ services:
       - ./backend:/var/www/html
       - ./backend/storage:/var/www/html/storage
     networks: [web]
-    depends_on: [redis]
+    depends_on: [redis, mysql]
     command: php-fpm
     expose: ["9000"]
 
@@ -23,7 +23,7 @@ services:
       - ./backend:/var/www/html
       - ./backend/storage:/var/www/html/storage
     networks: [web]
-    depends_on: [redis]
+    depends_on: [redis, mysql]
     command: sh -lc "php artisan queue:work --queue=transcode,default --sleep=1 --tries=1"
 
   nginx:
@@ -64,9 +64,21 @@ services:
     container_name: video_redis
     networks: [web]
 
+  mysql:
+    image: mysql:8.4
+    container_name: video_mysql
+    environment:
+      MYSQL_DATABASE: media_analysis
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+    networks: [web]
+
 networks:
   web:
     external: true
 
-# volumes:
-#   storage_dev:
+volumes:
+  mysql_data_prod:

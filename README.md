@@ -10,7 +10,7 @@ A media engine designed for the Real Estate industry allowing agents to upload l
 | **Backend API** | Laravel 11 (API-only) | Video upload, queue jobs, analytics |
 | **Frontend** | Vue 3 + Vuetify | Dashboard for upload & listing |
 | **Queue** | Redis 7 + Laravel Queue | Simulated transcoding jobs |
-| **Database** | SQLite | Store listings, videos, assets, events |
+| **Database** | MySQL 8 | Store listings, videos, assets, events |
 | **Reverse Proxy** | Traefik v3 | HTTPS routing for frontend + API |
 | **Runtime** | Docker Compose | Local + server environment parity |
 
@@ -39,7 +39,7 @@ Feature tests verify:
 ##  Run Locally
 
 1. Copy env file
-cp .env.example .env
+cp backend/.env.example backend/.env
 
 2. Start containers
 docker compose -f docker-compose.dev.yml up -d --build
@@ -47,7 +47,7 @@ docker compose -f docker-compose.dev.yml up -d --build
 3. Migrate database
 docker compose exec app php artisan migrate --seed
 
-4. Add video.localhost to you host
+4. Add video.localhost to your host
 
 Then open:
 Frontend: http://video.localhost

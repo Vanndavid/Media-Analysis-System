@@ -2,8 +2,8 @@ FROM php:8.3-fpm
 
 # System deps
 RUN apt-get update && apt-get install -y \
-    git unzip libpq-dev libzip-dev \
- && docker-php-ext-install pdo pdo_pgsql
+    git unzip libzip-dev default-mysql-client \
+ && docker-php-ext-install pdo pdo_mysql
 RUN mkdir -p storage/framework/{cache,sessions,views} bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
