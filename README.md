@@ -1,86 +1,113 @@
-#  Media Analysis System 
+# Media Analysis System
 
-A media engine designed for the Real Estate industry allowing agents to upload large property videos without blocking the UI, processes them in the background, and captures user interaction data to analyse viewing engagement.
----
+A containerized media pipeline for real-estate teams to upload listing videos, process them asynchronously, and capture viewer engagement events.
 
-##  Overview
+## Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|-------------|----------|
-| **Backend API** | Laravel 11 (API-only) | Video upload, queue jobs, analytics |
-| **Frontend** | Vue 3 + Vuetify | Dashboard for upload & listing |
-| **Queue** | Redis 7 + Laravel Queue | Simulated transcoding jobs |
-| **Database** | MySQL 8 | Store listings, videos, assets, events |
-| **Reverse Proxy** | Traefik v3 | HTTPS routing for frontend + API |
-| **Runtime** | Docker Compose | Local + server environment parity |
+| Layer | Technology | Responsibility |
+| --- | --- | --- |
+| Backend API | Laravel 11 (API-only) | Video ingestion, job orchestration, analytics endpoints |
+| Frontend | Vue 3 + Vuetify | Listing/video dashboard and upload workflow |
+| Queue | Redis 7 + Laravel Queue | Background processing for simulated transcoding |
+| Database | MySQL 8 | Listings, videos, assets, and playback event persistence |
+| Reverse Proxy | Traefik v3 | Local hostname routing for frontend + API |
+| Runtime | Docker Compose | Local development parity across services |
 
----
+## Core Features
 
-##  Features
+- Video uploads per listing (`.mp4`, `.webm`) through the dashboard/API.
+- Asynchronous processing flow with queued `TranscodeVideoJob` execution.
+- Video status lifecycle: `UPLOADED -> PROCESSING -> READY | FAILED`.
+- Asset storage for original uploads and mock renditions under Laravel public storage.
+- Playback analytics (play / complete tracking + top-played summaries).
+- Fully containerized local setup (frontend, API, queue, DB, proxy).
 
--  **Video Uploads** — Upload MP4/WebM files per listing  
--  **Async Job Flow** — Queues a *TranscodeVideoJob* that simulates processing  
--  **Status Tracking** — `UPLOADED → PROCESSING → READY / FAILED`  
--  **Asset Management** — Stores original videos and mock renditions in `/storage/app/public/videos`  
--  **Playback Analytics** — Tracks play/completion events and returns top-played videos  
--  **Vue Dashboard** — View listings, upload new videos, and see analytics summary  
--  **Containerized Stack** — Laravel + Vue + Redis + Traefik in one Docker Compose setup
+## Project Structure
 
----
+```text
+.
+├── backend/      # Laravel API, queue jobs, tests
+├── frontend/     # Vue + Vuetify SPA
+├── nginx/        # Proxy/support config
+├── docker-compose.dev.yml
+└── docker-compose.prod.yml
+```
 
-##  Testing
+## Local Development
 
-Feature tests verify:
-- `/api/health` endpoint responds with 200 OK  
-- `/api/videos` creates a new record and dispatches a queue job  
+### Prerequisites
 
----
+- Docker Engine + Docker Compose plugin
+- A hosts entry for `video.localhost`
 
-##  Run Locally
+### 1) Configure environment
 
-1. Copy env file
+```bash
 cp backend/.env.example backend/.env
+```
 
-2. Start containers
+### 2) Start the stack
+
+```bash
 docker compose -f docker-compose.dev.yml up -d --build
+```
 
-3. Migrate database
+### 3) Initialize the backend
+
+```bash
+docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
+```
 
-4. Add video.localhost to your host
+### 4) Add hosts entry
 
-Then open:
-Frontend: http://video.localhost
-API: http://video.localhost/api/health
+Add this line to your system hosts file:
 
----
+```text
+127.0.0.1 video.localhost
+```
 
-## Design Highlights
+### 5) Verify services
 
-Clean RESTful API with Laravel Resources
+- Frontend: <http://video.localhost>
+- API health: <http://video.localhost/api/health>
 
-Simple async queue design using Redis
+## Running Tests
 
-Developer-friendly Dockerized setup
+From the project root:
 
-Focus on backend architecture, not UI polish
+```bash
+docker compose exec app php artisan test
+```
 
----
+Current feature coverage includes:
 
-## Future Improvements
+- API health endpoint responds with HTTP 200.
+- Video creation endpoint stores records and dispatches queue work.
 
-Real FFmpeg-based transcoding service
+## API Quick Reference
 
-S3 or cloud storage integration
+- `GET /api/health` - service heartbeat.
+- `POST /api/videos` - upload a listing video.
+- `POST /api/events` - track playback engagement events.
+- `GET /api/analytics/top-played` - fetch top-played video metrics.
 
-Horizon dashboard for monitoring jobs
+## Design Notes
 
-Authenticated users and access control
+- API-first Laravel backend with resource-based responses.
+- Queue-first processing model to keep upload UX responsive.
+- Infrastructure defined in Compose for reproducible local onboarding.
+- Deliberately focused on backend architecture and workflow clarity.
 
-Analytics visualizations and filters
+## Roadmap
+
+- Replace simulated jobs with FFmpeg-based transcoding.
+- Cloud object storage integration (S3-compatible).
+- Queue observability via Horizon.
+- AuthN/AuthZ for listings and uploads.
+- Rich analytics filtering and visualization.
 
 ## Author
 
-Vanndavid Teng
-
-🌐 vanndavidteng.com
+Vanndavid Teng  
+<https://vanndavidteng.com>
