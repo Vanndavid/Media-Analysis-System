@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Jobs\TranscodeVideoJob;
 use App\Models\Listing;
 use App\Models\Video;
-use App\Models\VideoEvent;
-use App\Models\VideoAsset;
-use App\Jobs\TranscodeVideoJob;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class VideoController extends Controller
 {
     public function store(Request $req)
     {
         $req->validate([
-            'listing_id' => 'required',
+            'listing_id' => ['required', 'integer', 'exists:listings,id'],
             'title' => 'required|string|max:255',
             'file' => 'required|file|mimetypes:video/mp4,video/quicktime,video/webm|max:204800',
         ]);
@@ -36,20 +34,21 @@ class VideoController extends Controller
             'url' => $publicUrl,
             'size_bytes' => $req->file('file')->getSize(),
         ]);
-        TranscodeVideoJob::dispatch($video->id)->afterCommit();
 
+        TranscodeVideoJob::dispatch($video->id)->afterCommit();
 
         return response()->json(['data' => $video], 201);
     }
 
     public function show(string $id)
     {
-        return Video::with('assets','listing')->findOrFail($id);
+        return Video::with('assets', 'listing')->findOrFail($id);
     }
 
     public function byListing(int $listingId)
     {
         $listing = Listing::findOrFail($listingId);
+
         return $listing->videos()->with('assets')->get();
     }
 
@@ -58,4 +57,32 @@ class VideoController extends Controller
         return Listing::with('videos.assets')->get();
     }
 
+    public function transcode(string $id)
+    {
+        $video = Video::findOrFail($id);
+        TranscodeVideoJob::dispatch($video->id)->afterCommit();
+
+        return response()->json([
+            'message' => 'Transcode job dispatched.',
+            'data' => ['video_id' => $video->id],
+        ], 202);
+    }
+
+    public function patchStatus(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['UPLOADED', 'PROCESSING', 'READY', 'FAILED'])],
+            'error_message' => ['nullable', 'string'],
+        ]);
+
+        $video = Video::findOrFail($id);
+
+        $video->status = $validated['status'];
+        $video->error_message = $validated['status'] === 'FAILED'
+            ? ($validated['error_message'] ?? $video->error_message)
+            : null;
+        $video->save();
+
+        return response()->json(['data' => $video]);
+    }
 }
