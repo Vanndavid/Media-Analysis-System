@@ -19,18 +19,20 @@ async function fetchData() {
     health.value = res.data.ok ? '✅ API Connected' : '❌ Offline'
 
     const topRes = await api.get('/analytics/top-videos')
-    const rows = topRes.data
-
-    const details = []
-    for (const row of rows) {
-      const v = await api.get(`/videos/${row.video_id}`)
-      details.push({
-        ...v.data,
-        plays: row.plays,
-      })
-    }
-
-    topVideos.value = details
+    topVideos.value = topRes.data.map((row) => ({
+      id: row.video_id,
+      title: row.title,
+      source_url: row.source_url,
+      status: row.status,
+      thumbnail_url: row.thumbnail_url,
+      plays: row.plays,
+      listing: row.listing_title
+        ? {
+            title: row.listing_title,
+            address: row.listing_address,
+          }
+        : null,
+    }))
   } catch (e) {
     console.error('Error fetching data', e)
     health.value = '❌ API Offline'
